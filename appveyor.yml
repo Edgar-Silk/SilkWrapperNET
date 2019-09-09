@@ -4,7 +4,7 @@ platform: x64
 configuration: Release
 
 init:
-  - ps:
+  - ps: |
         $Arch       = 'x64'   #Options: x86 | x64  
 
         # Temporal build directories
