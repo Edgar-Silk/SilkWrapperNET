@@ -5,8 +5,218 @@ configuration: Release
 
 init:
   - ps:
-        Write-Host "Start"
+        $Arch       = 'x64'   #Options: x86 | x64  
 
+        # Temporal build directories
+        $MainDir    = 'C:\Tmp'
+        $WrapperDir = $MainDir+'\Wrapper'
+
+        # Set build temporary path
+        if ([System.IO.Directory]::Exists($MainDir)){
+            Set-Location $MainDir
+        }
+        else{
+            New-Item -Path $MainDir -ItemType Directory
+            Set-Location $MainDir
+        }
+
+        # Check if we already have Depo_tools
+        if ([System.IO.Directory]::Exists($MainDir+'\depot_tools')){
+            Set-Location C:\Tmp\depot_tools
+        }
+        else{
+            # Download and unzip depo_tools from google repository
+            
+            $url = "https://storage.googleapis.com/chrome-infra/depot_tools.zip"
+            $output = "depot_tools.zip"
+            $start_time = Get-Date
+            Invoke-WebRequest -Uri $url -OutFile $output
+            Write-Output "Time taken: $((Get-Date).Subtract($start_time).Seconds) second(s)"
+
+            # unzip the file
+            Add-Type -AssemblyName System.IO.Compression.FileSystem
+            function Unzip
+            {
+                param([string]$zipfile, [string]$outpath)
+
+                [System.IO.Compression.ZipFile]::ExtractToDirectory($zipfile, $outpath)
+            }
+
+            Unzip C:\Tmp\depot_tools.zip "C:\Tmp\depot_tools"
+
+            $env:Path = "C:\Tmp\depot_tools;$env:Path"
+            $env:DEPOT_TOOLS_WIN_TOOLCHAIN = "0"
+
+            Set-Location C:\Tmp\depot_tools
+        }
+
+        Write-Host "Testing 'gclient' command"
+        gclient | Out-Null
+
+        Set-Location $MainDir
+
+        ## Here, Takes time
+        Write-Host "Checking PDFium repository..."
+
+        #$env:DEPOT_TOOLS_UPDATE=0
+        gclient config --unmanaged https://pdfium.googlesource.com/pdfium.git
+
+        gclient sync
+
+        ## Finish setting up depot_tools and pdfium repo
+
+        ## Patch for BUILD.gn
+
+        Set-Location C:\Tmp\pdfium 
+
+        #Start patching the configuration BUILD.gn
+        Write-Host "Start patching BUILD.gn"
+
+        #Copy the original file
+        if(-Not (Test-Path -Path C:\Tmp\pdfium\BUILD.ORG.gn)){
+            Copy-Item '.\BUILD.gn' '.\BUILD.ORG.gn'
+        }
+
+        # Set file name
+        $File = '.\BUILD.ORG.gn'
+        $FileOut = '.\BUILD.mod.gn'
+
+        # Process lines of text from file and assign result to $NewContent variable
+        $NewContent = Get-Content -Path $File |
+            ForEach-Object {
+                # Output the existing line to pipeline in any case
+                
+                # If line matches regex
+                if($_ -match ([regex]::Escape('PNG_USE_READ_MACROS')))
+                {
+                    # Add output additional line
+                    $_
+                    '    "FPDFSDK_EXPORTS",'
+                }
+                
+                elseif($_ -match ('jumbo_component.+'))
+                {
+                    # Add output additional line
+                    'shared_library("pdfium") {'
+                }
+
+                elseif($_ -match ('complete_static_lib.+'))
+                {
+                    # Add output additional line
+                    '    complete_shared_lib = true'
+                }
+                
+                elseif($_ -match ([regex]::Escape('public_configs = [ ":pdfium_public_config" ]')))
+                {
+                    # Add output additional line
+                    $_
+                    '  sources = []'
+                }
+
+                else{ $_ }
+
+            }
+
+        # Write content of $NewContent varibale back to file
+        $NewContent | Out-File -FilePath $FileOut -Encoding Default -Force
+
+        Copy-Item '.\BUILD.mod.gn' '.\BUILD.gn' -Force
+
+        Write-Host "Finish patching BUILD.gn"
+
+        ## Patch for pdfview.h
+
+        Write-Host "Start patching fpdfview.h"
+
+        Set-Location C:\Tmp\pdfium\public 
+
+        #Copy the original file
+        if(-Not (Test-Path -Path C:\Tmp\pdfium\public\fpdfview.ORG.h)){
+            Copy-Item '.\fpdfview.h' '.\fpdfview.ORG.h'
+        }
+
+        # Set file name
+        $File = '.\fpdfview.ORG.h'
+        $FileOut = '.\fpdfview.mod.h'
+        # Process lines of text from file and assign result to $NewContent variable
+        $NewContent = Get-Content -Path $File |
+            ForEach-Object {
+                # Output the existing line to pipeline in any case
+                
+                # If line matches regex
+                if($_ -match ('^' + [regex]::Escape('#if defined(COMPONENT_BUILD)')))
+                {
+                    # Add output additional line
+                    '//#if defined(COMPONENT_BUILD)'
+                }
+
+                elseif($_ -match ('^' + [regex]::Escape('#endif  // defined(WIN32)')))
+                {
+                    # Add output additional line
+                    $_
+                    '/**'
+                }
+                
+                elseif($_ -match ('^'+ [regex]::Escape('#endif  // defined(COMPONENT_BUILD)')))
+                {
+                    # Add output additional line
+                    $_
+                    '**/'
+                }
+
+                else{ $_ }
+
+            }
+
+        # Write content of $NewContent varibale back to file
+        $NewContent | Out-File -FilePath $FileOut -Encoding Default -Force
+
+        Copy-Item '.\fpdfview.mod.h' '.\fpdfview.h' -Force
+
+        Write-Host "Finish patching fpdfview.h"
+
+        #Start patching the configuration fpdfview.h
+
+        ## Final stage to generate PDFium DLL
+        Set-Location C:\Tmp\pdfium
+
+        if ($Arch -eq 'x64'){
+            $GN_ARGS = 'is_component_build = false is_official_build = true is_debug = false pdf_enable_v8 = false pdf_enable_xfa = false pdf_is_standalone = true  current_cpu=\"x64\" target_cpu=\"x64\" '
+            $GN_OUTDIR = 'out\sharedReleasex64'
+            $OUT_DLL_DIR = $MainDir + '\Lib\x64'
+        }
+        elseif ($Arch -eq 'x86') {
+            $GN_ARGS = 'is_component_build = false is_official_build = true is_debug = false pdf_enable_v8 = false pdf_enable_xfa = false pdf_is_standalone = true  current_cpu=\"x86\" target_cpu=\"x86\" '
+            $GN_OUTDIR = 'out\sharedReleasex86'
+            $OUT_DLL_DIR = $MainDir + '\Lib\x86'
+        }
+        else{
+            Write-Host "Arch not defined or invalid..."
+            Exit
+        }
+
+        Write-Host 'Configure gn wiht --args='$GN_ARGS
+        #gn gen out/sharedReleasex64 --args='is_component_build = false is_official_build = true is_debug = false pdf_enable_v8 = false pdf_enable_xfa = false pdf_is_standalone = true  current_cpu=\"x64\" target_cpu=\"x64\" '
+        gn gen $GN_OUTDIR --args=$GN_ARGS 
+
+        Write-Host 'Compiling with ninja... '
+        #ninja -C out/sharedReleasex64 pdfium
+        ninja -C $GN_OUTDIR  pdfium
+
+        ## Copy the Output library to Lib/x64 or Lib/x86
+
+        # Set build temporary path
+        if ([System.IO.Directory]::Exists($OUT_DLL_DIR)){
+            Set-Location $OUT_DLL_DIR
+        }
+        else{
+            New-Item -Path $OUT_DLL_DIR -ItemType Directory
+            Set-Location $OUT_DLL_DIR
+        }
+
+        Write-Host 'Copy DLL files output to:' $OUT_DLL_DIR
+
+        Copy-Item -Path "$MainDir\pdfium\$GN_OUTDIR\pdfium.*" -Destination $OUT_DLL_DIR
 before_build:
   - dotnet restore
 
