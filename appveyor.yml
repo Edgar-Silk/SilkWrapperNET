@@ -51,7 +51,7 @@ init:
         }
 
         Write-Host "Testing 'gclient' command"
-        gclient | Out-Null
+        #gclient | Out-Null
 
         Set-Location $MainDir
 
