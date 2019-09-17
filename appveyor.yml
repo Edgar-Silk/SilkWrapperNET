@@ -18,6 +18,7 @@ init:
 
             # Globals
             $BuildDir       = "C:/projects/Build"
+            New-Item -Path  $BuildDir -ItemType Directory
             Set-Location    $BuildDir
 
             # Configuration:
