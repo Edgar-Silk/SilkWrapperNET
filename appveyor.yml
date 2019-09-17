@@ -17,12 +17,13 @@ init:
             )
 
             # Globals
-            $BuildDir       = (Get-Location).path
+            $BuildDir       = "C:/projects/Build"
+            Set-Location    $BuildDir
 
             # Configuration:
             Write-Host "Architecture: " $Arch
             Write-Host "PDFium branch: " $Pdfium_Branch
-            Write-Host "Depot_tools branch: " $Pdfium_Branch
+            Write-Host "Depot_tools branch: " $Depot_Branch
             Write-Host "Directory to Build: " $BuildDir
 
             # Check for Depot_tools
@@ -211,7 +212,7 @@ init:
             Set-Location $BuildDir
         
             # This is the location for building the VS project
-            Set-Location C:\projects\silkwrappernet
+            Set-Location C:/projects/silkwrappernet
 
 before_build:
 #  - dotnet restore
@@ -225,40 +226,40 @@ build:
 
 after_build:
   - ps: |
-        $Arch       = 'x64'   #Options: x86 | x64  
+            $Arch       = 'x64'   #Options: x86 | x64  
 
-        # Temporal build directories
-        $MainDir    = 'C:\Tmp'
-        $WrapperDir = 'C:\projects\silkwrappernet'
-        
-        Write-Host "Copy pdfium DLL to Wrapper solution project"
+            # Temporal build directories
+            $BuildDir    = 'C:/projects/silkwrappernet'
+            $WrapperDir  = 'C:/projects/silkwrappernet'
+            
+            Write-Host "Copy pdfium DLL to Wrapper solution project"
 
-        if ([System.IO.Directory]::Exists($WrapperDir+'\SilkWrapperNET\lib\'+$Arch)){
-            Set-Location $WrapperDir'\SilkWrapperNET\lib\'$Arch
-        }
-        else{
-            New-Item -Path $WrapperDir'\SilkWrapperNET\lib\'$Arch -ItemType Directory
-            Set-Location $WrapperDir'\SilkWrapperNET\lib\'$Arch
-        }
+            if ([System.IO.Directory]::Exists($WrapperDir+'/SilkWrapperNET/lib/'+$Arch)){
+                Set-Location $WrapperDir'/SilkWrapperNET/lib/'$Arch
+            }
+            else{
+                New-Item -Path $WrapperDir'/SilkWrapperNET/lib/'$Arch -ItemType Directory
+                Set-Location $WrapperDir'/SilkWrapperNET/lib/'$Arch
+            }
 
 
-        if(Test-Path -Path $OUT_DLL_DIR'\pdfium.dll'){
-            Copy-Item $OUT_DLL_DIR'\pdfium.dll' -Destination $WrapperDir'\SilkWrapperNET\lib\'$Arch
-        }
+            if(Test-Path -Path $OUT_DLL_DIR'/pdfium.dll'){
+                Copy-Item $OUT_DLL_DIR'/pdfium.dll' -Destination $WrapperDir'/SilkWrapperNET/lib/'$Arch
+            }
 
-        Write-Host "Make NuGet Package..."
+            Write-Host "Make NuGet Package..."
 
-        Set-Location $WrapperDir'\SilkWrapperNET'
+            Set-Location $WrapperDir'/SilkWrapperNET'
 
-        nuget pack SilkWrapperNET.csproj -properties "Configuration=Release;Platform=$Arch"
-  #- nuget push C:\projects\wrapper\wrapper\bin\x64\Debug\Wrapper.1.0.1.nupkg 4ea8694a-134a-4cbe-b553-b3c6487a64ec -Source https://www.myget.org/F/wrapper-pdfium/api/v2/package
+            nuget pack SilkWrapperNET.csproj -properties "Configuration=Release;Platform=$Arch"
 
-# deploy:
+            
+deploy:
 #   - provider: NuGet
 #     symbol_server: https://ci.appveyor.com/nuget/wrapper-8k7xixj6m22b/api/v2/package
 #     api_key:
 #       secure: 8avv5kgxnpoqxildqyfsnga3
 #     artifact: /.*\.symbols\.nupkg/
 
-#test_script:
+test_script:
 #  - C:\projects\testfromnuget\TestFromNuGet\bin\x64\Debug\TestFromNuGet.exe
