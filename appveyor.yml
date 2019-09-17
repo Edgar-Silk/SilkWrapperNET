@@ -1,12 +1,12 @@
 version: 1.0.{build}
 image: Visual Studio 2017
-platform: x64
+platform: x86
 configuration: Release
 
 
 before_build: 
-    #- ps: Set-Location "C:/projects/silkwrappernet/PS"
-    #- ps: ./Build_PDFium.ps1 -Arch "$env:PLATFORM"
+    - ps: Set-Location "C:/projects/silkwrappernet/PS"
+    - ps: ./Build_PDFium.ps1 -Arch "$env:PLATFORM"
 
 
 build_script:
