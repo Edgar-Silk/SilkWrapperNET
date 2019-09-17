@@ -6,7 +6,7 @@ configuration: Release
 
 before_build: 
     - ps: Set-Location "C:/projects/silkwrappernet/PS"
-    - ps: ./Build_PDFium.ps1 -Arch $PLATFORM
+    - ps: ./Build_PDFium.ps1 -Arch PLATFORM
 
 
 build:
