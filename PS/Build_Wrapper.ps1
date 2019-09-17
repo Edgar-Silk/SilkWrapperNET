@@ -112,7 +112,7 @@ else {
     Set-Location $OUT_NUGET_DIR
 }
 
-Write-Host 'Copy DLL files output to: ' $OUT_NUGET_DIR
+Write-Host 'Copy NuGet files output to: ' $OUT_NUGET_DIR
 
 Copy-Item -Path "$WrapperDir/$Project_Name/$Project_Name/*.*.*.*.nupkg" -Destination $OUT_NUGET_DIR
 
