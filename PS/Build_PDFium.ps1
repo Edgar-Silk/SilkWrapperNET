@@ -34,7 +34,7 @@ else {
     # Download depot_tools from google repository
     Write-Host "Directory not Found"
     
-    git clone https://chromium.googlesource.com/chromium/tools/depot_tools
+    git clone -q --branch=master https://chromium.googlesource.com/chromium/tools/depot_tools
 
     Set-Location $BuildDir'/depot_tools'
 

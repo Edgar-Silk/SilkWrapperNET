@@ -58,7 +58,7 @@ function buildVS {
 $Project_Name = 'SilkWrapperNET'
 Write-Host "Getting Wrapper repository from github"
 
-git clone 'https://github.com/Edgar-Silk/SilkWrapperNET'
+git clone -q --branch=master 'https://github.com/Edgar-Silk/SilkWrapperNET' 
 
 Set-Location $WrapperDir'/'$Project_Name
 
