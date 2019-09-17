@@ -6,13 +6,11 @@ configuration: Release
 
 before_build: 
     - ps: Set-Location "C:/projects/silkwrappernet/PS"
-    - ps: ./Build_PDFium.ps1 -Arch PLATFORM
+    - ps: ./Build_PDFium.ps1 -Arch x64
 
 
-build:
-  #include_nuget_references: true
-  #verbosity: normal
-  #project: SilkWrapperNET.sln 
-
+build_script:
+    - ps: Set-Location "C:/projects/silkwrappernet/PS"
+    - ps: ./Build_Wrapper.ps1 -Arch x64
 
  
