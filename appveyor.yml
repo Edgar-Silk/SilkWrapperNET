@@ -6,12 +6,13 @@ configuration: Release
 
 before_build: 
     - ps: Set-Location "C:/projects/silkwrappernet/PS"
-     
+    - ps: Build_PDFium.ps1 -Arch {platform}
+
 
 build:
   #include_nuget_references: true
-  verbosity: normal
-  project: SilkWrapperNET.sln 
+  #verbosity: normal
+  #project: SilkWrapperNET.sln 
 
 
  
