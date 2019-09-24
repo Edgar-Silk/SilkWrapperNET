@@ -1,6 +1,6 @@
 version: 1.0.{build}
 image: Visual Studio 2017
-platform: x64
+platform: x86
 configuration: Release
 
 init:
@@ -222,7 +222,6 @@ before_build:
 #  - nuget install packages.config
 
 build:
-  #include_nuget_references: true
   verbosity: normal
   project: SilkWrapperNET.sln 
 
