@@ -22,6 +22,7 @@ $env:DEPOT_TOOLS_UPDATE = "0"
 
 # Set directory variable
 $WrapperDir = $BuildDir+'/Wrapper'
+
 # Set build temporary path
 if ([System.IO.Directory]::Exists($WrapperDir)) {
     Set-Location $WrapperDir
@@ -31,7 +32,7 @@ else {
     Set-Location $WrapperDir
 }
 
-# Visual Studio MSI-Builder - LOCAL
+# Visual Studio MSI-Builder - Find and set compiler
 Write-Host "Locate VS 2017 MSBuilder.exe"
 function buildVS {
     param (
@@ -64,7 +65,7 @@ Set-Location $WrapperDir'/'$Project_Name
 
 buildVS -path ./SilkWrapperNET.sln 
 
-# Check if the DLL exist and copy to Wrapper\Lib
+# Check if the DLL exist. Then, copy to Wrapper/Lib
 Write-Host "Checking for PDFium.DLL library..."
 Set-Location $BuildDir'/pdfium'
 
@@ -78,7 +79,8 @@ else {
     Write-Host "Arch not defined or invalid..."
     Exit
 }
- 
+
+# Copy to solution project directory
 Write-Host "Copy pdfium DLL to Wrapper solution project"
 
 $Lib_Dir  = $WrapperDir+"/"+$Project_Name+"/"+$Project_Name+"/lib/"+$Arch
@@ -95,6 +97,7 @@ if (Test-Path -Path $OUT_DLL_DIR'/pdfium.dll') {
     Copy-Item $OUT_DLL_DIR'/pdfium.dll' -Destination $Lib_Dir
 }
 
+# Make NuGet package
 Write-Host "Make NuGet Package..."
 
 Set-Location $WrapperDir"/"$Project_Name"/"$Project_Name

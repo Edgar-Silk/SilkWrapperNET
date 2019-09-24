@@ -26,6 +26,7 @@ $env:Path = "$BuildDir/depot_tools;$env:Path"
 $env:DEPOT_TOOLS_WIN_TOOLCHAIN = "0"
 $env:DEPOT_TOOLS_UPDATE = "0"
 
+#Check if we have "depot_tools" directory
 if ([System.IO.Directory]::Exists($BuildDir+'/depot_tools')) {
     Write-Host "Directory found!"
     Set-Location $BuildDir'/depot_tools'
@@ -40,6 +41,7 @@ else {
 
     git status
 
+    #Here, we select the active branch
     git checkout $Depot_Branch
     
 }
